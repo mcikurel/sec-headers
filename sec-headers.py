@@ -21,6 +21,8 @@ from colorama import Fore, Back, Style, init
 # Add output file (csv o algo asi)
 # Add input list of URLs (from file or stdin)
 # Identify headers with incorrect config values
+# Lowercase when cheking for headers
+# Match Server, X-Powered-By, etc
 
 parser = argparse.ArgumentParser(description='HTTP headers PoC')
 parser.add_argument('--url', type=str, help='target URL', required=True)
@@ -34,6 +36,9 @@ required_headers = ['Strict-Transport-Security',
                     'Referrer-Policy',
                     'Permissions-Policy']
 
+tech_headers = ['Server',
+                'X-Powered-By']
+
 def main():
     init(autoreset=True)
     req = requests.get(args.url, allow_redirects=args.allow_redirects)
@@ -46,17 +51,18 @@ def main():
     for h in req.headers.items():
         print(h)
 
-    found_headers = [x[0] for x in req.headers.items()]
-    #print(found_headers)
+    found_headers = [x[0].lower() for x in req.headers.items()]
 
     # Check for SecurityHeaders.com headers
     for h in required_headers:
-        if h not in found_headers:
+        if h.lower() not in found_headers:
             print(Fore.RED + f'Missing {h}')
         else:
             print(Fore.GREEN + f'Found {h}')
+    
+    # Check security headers values
 
-    print('\n')
+    print()
 
     # Analyse cookies
     print(Fore.YELLOW + f'[+] Checking cookies for {args.url}')
@@ -70,7 +76,14 @@ def main():
             print(Fore.YELLOW + f'{c.name} -' + Fore.GREEN + f' HttpOnly: {c.has_nonstandard_attr("httponly")}')
         else:
             print(Fore.YELLOW + f'{c.name} -' + Fore.RED + f' HttpOnly: {c.has_nonstandard_attr("httponly")}')
-
+    
+    print()
+    
+    # Tech headers
+    print(Fore.YELLOW + f'[+] Checking tech headers for {args.url}')
+    for h in tech_headers:
+        if h.lower() in found_headers:
+            print(Fore.RED + f'{h}: {req.headers[h]}')
 
         
 if __name__ == '__main__':
