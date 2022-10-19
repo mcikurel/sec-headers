@@ -17,12 +17,14 @@ from colorama import Fore, Back, Style, init
 # Cross-Origin-Resource-Policy
 # Cache-Control
 
+## OWASP recommended values
+# X-Frame-Options: DENY
+
+
 ## TODO
 # Add output file (csv o algo asi)
 # Add input list of URLs (from file or stdin)
 # Identify headers with incorrect config values
-# Lowercase when cheking for headers
-# Match Server, X-Powered-By, etc
 
 parser = argparse.ArgumentParser(description='HTTP headers PoC')
 parser.add_argument('--url', type=str, help='target URL', required=True)
@@ -76,6 +78,11 @@ def main():
             print(Fore.YELLOW + f'{c.name} -' + Fore.GREEN + f' HttpOnly: {c.has_nonstandard_attr("httponly")}')
         else:
             print(Fore.YELLOW + f'{c.name} -' + Fore.RED + f' HttpOnly: {c.has_nonstandard_attr("httponly")}')
+
+        if c.has_nonstandard_attr("samesite"):
+            print(Fore.YELLOW + f'{c.name} -' + Fore.GREEN + f' SameSite: {c.has_nonstandard_attr("samesite")}')
+        else:
+            print(Fore.YELLOW + f'{c.name} -' + Fore.RED + f' SameSite: {c.has_nonstandard_attr("samesite")}')
     
     print()
     
