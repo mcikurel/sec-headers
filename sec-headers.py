@@ -1,25 +1,22 @@
 import requests
 import argparse
+import json
 from colorama import Fore, Back, Style, init
 #from termcolor import colored
 
 ## OWASP Security Headers:
-# (SecHeaders) Strict-Transport-Security: max-age=SECONDS ; includeSubDomains
-# (SecHeaders) X-Frame-Options: deny | sameorigin | allow-from:DOMAIN
-# (SecHeaders) X-Content-Type-Options: nosniff
-# (SecHeaders) Content-Security-Policy: ver docs
-# (SecHeaders) Referrer-Policy
-# (SecHeaders) Permissions-Policy -> Working draft
-# X-Permitted-Cross-Domain-Policies:
-# Clear-Site-Data
-# Cross-Origin-Embedder-Policy
-# Cross-Origin-Opener-Policy
-# Cross-Origin-Resource-Policy
-# Cache-Control
-
-## OWASP recommended values
-# X-Frame-Options: DENY
-
+# (SecHeaders) Strict-Transport-Security: max-age=SECONDS ; includeSubDomains   (recommended: max-age=31536000 ; includeSubDomains)
+# (SecHeaders) X-Frame-Options: deny | sameorigin | allow-from:DOMAIN           (recommended: deny)
+# (SecHeaders) X-Content-Type-Options: nosniff                                  (recommended: nosniff)
+# (SecHeaders) Content-Security-Policy: ver docs                                (recommended: check docs)
+# (SecHeaders) Referrer-Policy                                                  (recommended: no-referrer)
+# (SecHeaders) Permissions-Policy -> Working draft                              (recommended: check docs)
+# X-Permitted-Cross-Domain-Policies                                             (recommended: none)
+# Clear-Site-Data                                                               (recommended: "cache","cookies","storage")
+# Cross-Origin-Embedder-Policy                                                  (recommended: require-corp)
+# Cross-Origin-Opener-Policy                                                    (recommended: same-origin)
+# Cross-Origin-Resource-Policy                                                  (recommended: same-origin)
+# Cache-Control                                                                 (recommended: no-store, max-age=0)
 
 ## TODO
 # Add output file (csv o algo asi)
@@ -86,9 +83,13 @@ def main():
     
     print()
     
-    # Tech headers
-    print(Fore.YELLOW + f'[+] Checking tech headers for {args.url}')
-    for h in tech_headers:
+    # Information disclosure headers
+    print(Fore.YELLOW + f'[+] Checking for information disclosure via headers for {args.url}')
+
+    get_owasp_list = requests.get('https://owasp.org/www-project-secure-headers/ci/headers_remove.json')
+    owasp_remove_headers = json.loads(get_owasp_list.text)['headers']
+        
+    for h in owasp_remove_headers:
         if h.lower() in found_headers:
             print(Fore.RED + f'{h}: {req.headers[h]}')
 
