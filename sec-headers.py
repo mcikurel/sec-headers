@@ -48,19 +48,20 @@ def main():
     
     print(Fore.YELLOW + f'[+] Headers found for {args.url}')
     for h in req.headers.items():
-        print(h)
+        print(Fore.CYAN + f'{h[0]}:' + Fore.WHITE + f'{h[1]}')
 
     found_headers = [x[0].lower() for x in req.headers.items()]
 
+    print()
+
     # Check for SecurityHeaders.com headers
+    print(Fore.YELLOW + f'[+] Checking security headers for {args.url}')
     for h in required_headers:
         if h.lower() not in found_headers:
             print(Fore.RED + f'Missing {h}')
         else:
             print(Fore.GREEN + f'Found {h}')
     
-    # Check security headers values
-
     print()
 
     # Analyse cookies
