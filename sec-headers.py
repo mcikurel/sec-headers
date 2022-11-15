@@ -2,7 +2,6 @@ import requests
 import argparse
 import json
 from colorama import Fore, Back, Style, init
-#from termcolor import colored
 
 ## OWASP Security Headers:
 # (SecHeaders) Strict-Transport-Security: max-age=SECONDS ; includeSubDomains   (recommended: max-age=31536000 ; includeSubDomains)
@@ -25,7 +24,8 @@ from colorama import Fore, Back, Style, init
 
 parser = argparse.ArgumentParser(description='HTTP headers PoC')
 parser.add_argument('--url', type=str, help='target URL', required=True)
-parser.add_argument('--allow_redirects', action='store_true', help='allow redirects') 
+parser.add_argument('--allow_redirects', action='store_true', help='allow redirects')
+parser.add_argument('--verify_cert', action='store_true', help='verify SSL certificate')
 args = parser.parse_args()
 
 required_headers = ['Strict-Transport-Security',
@@ -35,23 +35,26 @@ required_headers = ['Strict-Transport-Security',
                     'Referrer-Policy',
                     'Permissions-Policy']
 
-tech_headers = ['Server',
-                'X-Powered-By']
+rec_values = {'strict-transport-security':'',
+            'x-frame-options':'deny',
+            'x-content-type-options':'sniff',
+            'content-security-policy':'',
+            'referrer-policy':'no-referrer',
+            'permissions-policy':''}
+
 
 def main():
     init(autoreset=True)
-    req = requests.get(args.url, allow_redirects=args.allow_redirects)
+    req = requests.get(args.url, allow_redirects=args.allow_redirects, verify=args.verify_cert)
     
     print(Fore.YELLOW + f'[+] HTTP code: {req.status_code}')
-    #print(colored(f'HTTP code: {req.status_code}', 'green', 'on_red'))
-    #print(colored(f'HTTP code: {req.status_code}', 'blue', 'on_white', attrs=['underline']))
     
     print(Fore.YELLOW + f'[+] Headers found for {args.url}')
     for h in req.headers.items():
         print(Fore.CYAN + f'{h[0]}:' + Fore.WHITE + f'{h[1]}')
 
     found_headers = [x[0].lower() for x in req.headers.items()]
-
+    
     print()
 
     # Check for SecurityHeaders.com headers
@@ -61,6 +64,8 @@ def main():
             print(Fore.RED + f'Missing {h}')
         else:
             print(Fore.GREEN + f'Found {h}')
+            # if rec_values[h.lower()] != req.headers[h]: 
+            #    print(Fore.YELLOW + f'Check values for {h}')
     
     print()
 
@@ -94,6 +99,8 @@ def main():
         if h.lower() in found_headers:
             print(Fore.RED + f'{h}: {req.headers[h]}')
 
-        
+   # Identify custom headers
+
+
 if __name__ == '__main__':
     main()
