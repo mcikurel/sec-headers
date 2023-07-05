@@ -23,7 +23,8 @@ from colorama import Fore, Back, Style, init
 # Identify headers with incorrect config values
 
 parser = argparse.ArgumentParser(description='HTTP headers PoC')
-parser.add_argument('--url', type=str, help='target URL', required=True)
+parser.add_argument('--url', type=str, help='target URL')
+parser.add_argument('--url_list', type=str, help='list of target URLs')
 parser.add_argument('--allow_redirects', action='store_true', help='allow redirects')
 parser.add_argument('--verify_cert', action='store_true', help='verify SSL certificate')
 args = parser.parse_args()
@@ -43,20 +44,22 @@ rec_values = {'strict-transport-security':'',
             'permissions-policy':''}
 
 
-def main():
-    init(autoreset=True)
-    req = requests.get(args.url, allow_redirects=args.allow_redirects, verify=args.verify_cert)
-    
+def get_headers(url):
+    # Send request to url
+    req = requests.get(url, allow_redirects=args.allow_redirects, verify=args.verify_cert)
+    # Print HTTP response code
     print(Fore.YELLOW + f'[+] HTTP code: {req.status_code}')
-    
+    # Print headers 
     print(Fore.YELLOW + f'[+] Headers found for {args.url}')
     for h in req.headers.items():
         print(Fore.CYAN + f'{h[0]}:' + Fore.WHITE + f'{h[1]}')
-
+    # Build dictionary 
     found_headers = [x[0].lower() for x in req.headers.items()]
-    
     print()
+    return req, found_headers
 
+
+def check_headers(found_headers):
     # Check for SecurityHeaders.com headers
     print(Fore.YELLOW + f'[+] Checking security headers for {args.url}')
     for h in required_headers:
@@ -66,29 +69,33 @@ def main():
             print(Fore.GREEN + f'Found {h}')
             # if rec_values[h.lower()] != req.headers[h]: 
             #    print(Fore.YELLOW + f'Check values for {h}')
-    
     print()
 
+
+def check_cookies(req):
     # Analyse cookies
     print(Fore.YELLOW + f'[+] Checking cookies for {args.url}')
-    for c in req.cookies:
-        if c.secure:
-            print(Fore.YELLOW + f'{c.name} -' + Fore.GREEN + f' Secure: {c.secure}')
-        else:
-            print(Fore.YELLOW + f'{c.name} -' + Fore.RED + f' Secure: {c.secure}')
-        
-        if c.has_nonstandard_attr("httponly"):
-            print(Fore.YELLOW + f'{c.name} -' + Fore.GREEN + f' HttpOnly: {c.has_nonstandard_attr("httponly")}')
-        else:
-            print(Fore.YELLOW + f'{c.name} -' + Fore.RED + f' HttpOnly: {c.has_nonstandard_attr("httponly")}')
 
-        if c.has_nonstandard_attr("samesite"):
-            print(Fore.YELLOW + f'{c.name} -' + Fore.GREEN + f' SameSite: {c.has_nonstandard_attr("samesite")}')
+    for c in req.cookies:
+        print(Fore.YELLOW + f'{c.name}')
+        if c.secure:
+            print(Fore.GREEN + f'Secure: {c.secure}' + Fore.YELLOW + ' |', end=' ')
         else:
-            print(Fore.YELLOW + f'{c.name} -' + Fore.RED + f' SameSite: {c.has_nonstandard_attr("samesite")}')
-    
+            print(Fore.RED + f'Secure: {c.secure}' + Fore.YELLOW + ' |', end=' ')
+
+        if c.has_nonstandard_attr('httponly'):
+            print(Fore.GREEN + f'HttpOnly: {c.has_nonstandard_attr("httponly")}' + Fore.YELLOW + ' |', end=' ')
+        else:
+            print(Fore.RED + f'HttpOnly: {c.has_nonstandard_attr("httponly")}' + Fore.YELLOW + ' |', end=' ')
+
+        if c.has_nonstandard_attr('samesite'):
+            print(Fore.GREEN + f'SameSite: {c.has_nonstandard_attr("samesite")}')
+        else:
+            print(Fore.RED + f'SameSite: {c.has_nonstandard_attr("samesite")}')
     print()
-    
+
+
+def check_info_disclosure(req, found_headers):
     # Information disclosure headers
     print(Fore.YELLOW + f'[+] Checking for information disclosure via headers for {args.url}')
 
@@ -99,7 +106,14 @@ def main():
         if h.lower() in found_headers:
             print(Fore.RED + f'{h}: {req.headers[h]}')
 
-   # Identify custom headers
+
+def main():
+    init(autoreset=True)
+
+    req, found_headers = get_headers(args.url)
+    check_headers(found_headers)
+    check_cookies(req)
+    check_info_disclosure(req, found_headers)
 
 
 if __name__ == '__main__':
